@@ -1,0 +1,26 @@
+[Unit]
+Description=Suno Workflow Server
+After=network.target
+
+[Service]
+Type=simple
+User=www-data
+Group=www-data
+WorkingDirectory=/opt/suno-workflow
+ExecStart=/opt/suno-workflow/suno-workflow
+Restart=on-failure
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+EnvironmentFile=/opt/suno-workflow/.env
+
+# Security hardening
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/suno-workflow/uploads
+
+[Install]
+WantedBy=multi-user.target
+

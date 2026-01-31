@@ -1,0 +1,28 @@
+# Binaries
+suno-workflow
+suno-workflow-linux
+*.exe
+
+# Environment files
+.env
+
+# Uploads
+uploads/
+
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Go
+vendor/
+
+# Air (hot reload)
+tmp/
+
