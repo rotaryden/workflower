@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"workflower/config"
+	"workflower/deploy"
 	"workflower/handlers"
 	"workflower/storage"
 	"workflower/telegram"
@@ -20,8 +21,26 @@ import (
 )
 
 func main() {
+	deployFlag := flag.Bool("D", false, "Deploy to remote server")
+	setupFlag := flag.Bool("setup", false, "Run remote setup (used during deployment)")
 	useTunnel := flag.Bool("L", false, "Start Cloudflare tunnel and override BASE_URL/TELEGRAM_WEBHOOK_URL")
 	flag.Parse()
+
+	// Handle deployment mode
+	if *deployFlag {
+		if err := deploy.Deploy(); err != nil {
+			log.Fatalf("Deployment failed: %v", err)
+		}
+		return
+	}
+
+	// Handle remote setup mode
+	if *setupFlag {
+		if err := deploy.Setup(); err != nil {
+			log.Fatalf("Setup failed: %v", err)
+		}
+		return
+	}
 
 	// Load .env file if it exists
 	if err := godotenv.Load(); err != nil {
