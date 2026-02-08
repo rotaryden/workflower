@@ -4,14 +4,19 @@
 <task_description>
 	Create a Golang program running a workflow for creation a song from text input using the Suno service 
 </task_description>
-<architecture>
+<code_design>
 	- you should use simple architecture, based on well decomposed functions and modules
 	- follow SOLID and DRY principles, SOLID should be very light in object-oriented design, just simple methods on Golang objects and structures.
 	- make sure you functional decomposition is highly reusable and maintainable, including future projects with different tasks
-</architecture>
+	- do NOT create global variables unless it's really neccessary, try to use functions and return values instead
+</code_design>
+<boilerplate_reuse>
+	- treat existing code as boilerplate, the Task implementation should reuse all reasonable parts of this boilerplate.
+	- do NOT modify anything in the "lib" folder, just reuse it as library code for the implementation.
+	- if you nevertheless think "lib" should be modiffied or extended, ask me first.
+</boilerplate_reuse>
 <tech_implementation>
-	- use Golang version 1.25 or higher
-	- Workflow should be a Golang program
+	- Workflow should be a Golang program, use Golang version 1.25 or higher
 	- it should contain a self-serving HTTP server based on Gin framework, and expose a port to env variable
 	- It should render a simple UI HTML templates, created in Go code
 	- One HTML page would be a workflow starter with the next fields: task description, is_premium_suno, optional_audio_upload

@@ -14,7 +14,7 @@ import (
 	"workflower/config"
 	"workflower/storage"
 	"workflower/telegram"
-	"workflower/templates"
+	"workflower/ui_templates"
 	"workflower/workflow"
 
 	"github.com/gin-gonic/gin"
@@ -23,19 +23,21 @@ import (
 
 // Handler holds dependencies for HTTP handlers
 type Handler struct {
-	cfg      *config.Config
-	store    *storage.Store
-	engine   *workflow.Engine
-	notifier *telegram.Notifier
+	cfg       *config.Config
+	store     *storage.Store
+	engine    *workflow.Engine
+	notifier  *telegram.Notifier
+	templates *ui_templates.TemplatesList
 }
 
 // NewHandler creates a new handler instance
-func NewHandler(cfg *config.Config, store *storage.Store, engine *workflow.Engine) *Handler {
+func NewHandler(cfg *config.Config, store *storage.Store, engine *workflow.Engine, templates *ui_templates.TemplatesList) *Handler {
 	return &Handler{
-		cfg:      cfg,
-		store:    store,
-		engine:   engine,
-		notifier: telegram.NewNotifier(cfg.TelegramBotToken, cfg.TelegramChatID),
+		cfg:       cfg,
+		store:     store,
+		engine:    engine,
+		notifier:  telegram.NewNotifier(cfg.TelegramBotToken, cfg.TelegramChatID),
+		templates: templates,
 	}
 }
 
@@ -60,12 +62,12 @@ func (h *Handler) RegisterRoutes(r *gin.Engine) {
 
 // StartPage renders the workflow starter form
 func (h *Handler) StartPage(c *gin.Context) {
-	data := templates.PageData{
+	data := ui_templates.PageData{
 		Title: "Create Song",
 	}
 
 	c.Header("Content-Type", "text/html; charset=utf-8")
-	if err := templates.StartPage.Execute(c.Writer, data); err != nil {
+	if err := h.templates.Start.Execute(c.Writer, data); err != nil {
 		c.String(http.StatusInternalServerError, "Template error: %v", err)
 	}
 }
@@ -74,13 +76,13 @@ func (h *Handler) StartPage(c *gin.Context) {
 func (h *Handler) WorkflowsList(c *gin.Context) {
 	workflows := h.store.List()
 
-	data := templates.PageData{
+	data := ui_templates.PageData{
 		Title:     "Workflows",
 		Workflows: workflows,
 	}
 
 	c.Header("Content-Type", "text/html; charset=utf-8")
-	if err := templates.WorkflowsList.Execute(c.Writer, data); err != nil {
+	if err := h.templates.List.Execute(c.Writer, data); err != nil {
 		c.String(http.StatusInternalServerError, "Template error: %v", err)
 	}
 }
@@ -101,13 +103,13 @@ func (h *Handler) WorkflowStatus(c *gin.Context) {
 		return
 	}
 
-	data := templates.PageData{
+	data := ui_templates.PageData{
 		Title:    "Workflow Status",
 		Workflow: wf,
 	}
 
 	c.Header("Content-Type", "text/html; charset=utf-8")
-	if err := templates.StatusPage.Execute(c.Writer, data); err != nil {
+	if err := h.templates.Status.Execute(c.Writer, data); err != nil {
 		c.String(http.StatusInternalServerError, "Template error: %v", err)
 	}
 }
@@ -127,13 +129,13 @@ func (h *Handler) ReviewPage(c *gin.Context) {
 		return
 	}
 
-	data := templates.PageData{
+	data := ui_templates.PageData{
 		Title:    "Review",
 		Workflow: wf,
 	}
 
 	c.Header("Content-Type", "text/html; charset=utf-8")
-	if err := templates.ReviewPage.Execute(c.Writer, data); err != nil {
+	if err := h.templates.Review.Execute(c.Writer, data); err != nil {
 		c.String(http.StatusInternalServerError, "Template error: %v", err)
 	}
 }

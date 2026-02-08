@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{.Title}} - Suno Workflow</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=JetBrains+Mono:wght@400;500&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --gradient-start: #0f0c29;
+            --gradient-mid: #302b63;
+            --gradient-end: #24243e;
+            --accent-gold: #fbbf24;
+            --accent-rose: #f43f5e;
+            --accent-violet: #8b5cf6;
+        }
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: linear-gradient(135deg, var(--gradient-start) 0%, var(--gradient-mid) 50%, var(--gradient-end) 100%);
+            min-height: 100vh;
+        }
+        .font-display {
+            font-family: 'Playfair Display', serif;
+        }
+        .font-mono {
+            font-family: 'JetBrains Mono', monospace;
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .glow-border {
+            box-shadow: 0 0 30px rgba(139, 92, 246, 0.3), inset 0 0 30px rgba(139, 92, 246, 0.05);
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent-violet) 0%, var(--accent-rose) 100%);
+            transition: all 0.3s ease;
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 40px rgba(139, 92, 246, 0.4);
+        }
+        .input-glow:focus {
+            box-shadow: 0 0 20px rgba(139, 92, 246, 0.4);
+            border-color: var(--accent-violet);
+        }
+        .animate-float {
+            animation: float 6s ease-in-out infinite;
+        }
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+        .bg-pattern {
+            background-image: 
+                radial-gradient(circle at 20% 80%, rgba(139, 92, 246, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(244, 63, 94, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 40% 40%, rgba(251, 191, 36, 0.05) 0%, transparent 30%);
+        }
+        textarea::-webkit-scrollbar {
+            width: 8px;
+        }
+        textarea::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 4px;
+        }
+        textarea::-webkit-scrollbar-thumb {
+            background: rgba(139, 92, 246, 0.5);
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body class="bg-pattern text-white antialiased">
+    <div class="min-h-screen flex flex-col">
+        <!-- Header -->
+        <header class="py-6 px-8">
+            <nav class="max-w-6xl mx-auto flex items-center justify-between">
+                <a href="/" class="flex items-center gap-3 group">
+                    <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-violet-500 to-rose-500 flex items-center justify-center animate-float">
+                        <svg class="w-7 h-7 text-white" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/>
+                        </svg>
+                    </div>
+                    <span class="font-display text-2xl font-semibold tracking-wide">Suno<span class="text-violet-400">Flow</span></span>
+                </a>
+                <div class="flex items-center gap-4">
+                    <a href="/" class="px-4 py-2 text-gray-300 hover:text-white transition">Home</a>
+                    <a href="/workflows" class="px-4 py-2 text-gray-300 hover:text-white transition">Workflows</a>
+                </div>
+            </nav>
+        </header>
+        
+        <!-- Main Content -->
+        <main class="flex-1 px-8 py-12">
+            <div class="max-w-4xl mx-auto">
+                {{template "content" .}}
+            </div>
+        </main>
+        
+        <!-- Footer -->
+        <footer class="py-6 px-8 text-center text-gray-500 text-sm">
+            <p>Powered by AI • Built with Go & Tailwind</p>
+        </footer>
+    </div>
+</body>
+</html>

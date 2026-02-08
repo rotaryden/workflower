@@ -13,7 +13,7 @@ import (
 	"workflower/handlers"
 	"workflower/storage"
 	"workflower/telegram"
-	"workflower/templates"
+	"workflower/ui_templates"
 	"workflower/workflow"
 
 	"github.com/gin-gonic/gin"
@@ -77,7 +77,8 @@ func main() {
 	}
 
 	// Initialize templates
-	if err := templates.Init(); err != nil {
+	templates, err := ui_templates.Init()
+	if err != nil {
 		log.Fatalf("Failed to initialize templates: %v", err)
 	}
 
@@ -88,7 +89,7 @@ func main() {
 	engine := workflow.NewEngine(cfg, store)
 
 	// Initialize handlers
-	handler := handlers.NewHandler(cfg, store, engine)
+	handler := handlers.NewHandler(cfg, store, engine, templates)
 
 	// Set Gin mode
 	if os.Getenv("GIN_MODE") == "" {
@@ -128,4 +129,3 @@ func main() {
 		log.Fatalf("Failed to start server: %v", err)
 	}
 }
-

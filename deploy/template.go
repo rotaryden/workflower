@@ -1,10 +1,9 @@
 package deploy
 
 import (
-	"bytes"
 	_ "embed"
 	"fmt"
-	"text/template"
+	"workflower/lib/templating"
 )
 
 //go:embed service.template
@@ -14,7 +13,7 @@ var serviceTemplate string
 type ServiceConfig struct {
 	Description      string
 	User             string
-	Group            string
+	Group             string
 	WorkingDirectory string
 	ExecStart        string
 	EnvFile          string
@@ -35,15 +34,10 @@ func GenerateServiceFile(cfg *Config) (string, error) {
 		ReadWritePaths:   fmt.Sprintf("%s/uploads", remotePath),
 	}
 
-	tmpl, err := template.New("service").Parse(serviceTemplate)
+	content, err := templating.Execute(serviceTemplate, serviceConfig, templating.Text)
 	if err != nil {
-		return "", fmt.Errorf("failed to parse template: %w", err)
+		return "", fmt.Errorf("failed to generate service file: %w", err)
 	}
 
-	var buf bytes.Buffer
-	if err := tmpl.Execute(&buf, serviceConfig); err != nil {
-		return "", fmt.Errorf("failed to execute template: %w", err)
-	}
-
-	return buf.String(), nil
+	return content, nil
 }

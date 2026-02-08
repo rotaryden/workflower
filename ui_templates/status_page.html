@@ -1,0 +1,62 @@
+{{define "content"}}
+<div class="text-center">
+    <div class="inline-flex items-center justify-center w-20 h-20 rounded-full {{if eq .Workflow.Status "completed"}}bg-green-500/20{{else if eq .Workflow.Status "failed"}}bg-rose-500/20{{else if eq .Workflow.Status "rejected"}}bg-gray-500/20{{else}}bg-violet-500/20{{end}} mb-6">
+        {{if eq .Workflow.Status "completed"}}
+        <svg class="w-10 h-10 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+        </svg>
+        {{else if eq .Workflow.Status "failed"}}
+        <svg class="w-10 h-10 text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+        </svg>
+        {{else if eq .Workflow.Status "rejected"}}
+        <svg class="w-10 h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+        {{else}}
+        <svg class="w-10 h-10 text-violet-400 animate-spin" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+        {{end}}
+    </div>
+    
+    <h1 class="font-display text-4xl font-bold mb-3 text-white">
+        {{if eq .Workflow.Status "completed"}}Song Created!{{else if eq .Workflow.Status "failed"}}Generation Failed{{else if eq .Workflow.Status "rejected"}}Workflow Rejected{{else if eq .Workflow.Status "processing"}}Processing...{{else if eq .Workflow.Status "awaiting_review"}}Awaiting Review{{else}}{{.Workflow.Status}}{{end}}
+    </h1>
+    
+    <p class="text-gray-400 mb-8">Workflow ID: <span class="font-mono text-violet-400">{{.Workflow.ID}}</span></p>
+
+    <div class="glass-card rounded-xl p-6 text-left max-w-2xl mx-auto space-y-4">
+        <div class="flex justify-between py-3 border-b border-white/10">
+            <span class="text-gray-400">Status</span>
+            <span class="{{if eq .Workflow.Status "completed"}}text-green-400{{else if eq .Workflow.Status "failed"}}text-rose-400{{else}}text-violet-400{{end}} font-medium capitalize">{{.Workflow.Status}}</span>
+        </div>
+        <div class="flex justify-between py-3 border-b border-white/10">
+            <span class="text-gray-400">Created</span>
+            <span class="text-white">{{.Workflow.CreatedAt.Format "Jan 02, 2006 15:04"}}</span>
+        </div>
+        {{if .Workflow.SunoJobID}}
+        <div class="flex justify-between py-3 border-b border-white/10">
+            <span class="text-gray-400">Suno Job ID</span>
+            <span class="text-white font-mono">{{.Workflow.SunoJobID}}</span>
+        </div>
+        {{end}}
+        {{if .Workflow.ErrorMsg}}
+        <div class="py-3">
+            <span class="text-gray-400 block mb-2">Error</span>
+            <p class="text-rose-400 bg-rose-500/10 px-4 py-3 rounded-lg text-sm">{{.Workflow.ErrorMsg}}</p>
+        </div>
+        {{end}}
+    </div>
+
+    <div class="mt-8">
+        <a href="/" class="inline-flex items-center gap-2 text-violet-400 hover:text-violet-300 transition">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+            </svg>
+            Start New Workflow
+        </a>
+    </div>
+</div>
+{{end}}
