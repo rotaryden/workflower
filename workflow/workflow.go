@@ -7,10 +7,10 @@ import (
 	"time"
 
 	"workflower/config"
+	"workflower/lib/telegram"
 	"workflower/llm"
 	"workflower/storage"
 	"workflower/suno"
-	"workflower/telegram"
 
 	"github.com/google/uuid"
 )
@@ -102,9 +102,9 @@ func (e *Engine) runWorkflowSteps(ctx context.Context, state *storage.WorkflowSt
 
 	// Notify via Telegram
 	reviewURL := fmt.Sprintf("%s/review/%s", e.cfg.BaseURL, state.ID)
-	message := fmt.Sprintf("🎵 Song workflow ready for review!\n\nTask: %s\n\n🔗 Review: %s", 
+	message := fmt.Sprintf("🎵 Song workflow ready for review!\n\nTask: %s\n\n🔗 Review: %s",
 		truncateString(state.TaskDescription, 100), reviewURL)
-	
+
 	if err := e.notifier.Send(ctx, message); err != nil {
 		// Log but don't fail the workflow
 		fmt.Printf("Warning: failed to send Telegram notification: %v\n", err)
@@ -119,7 +119,7 @@ func (e *Engine) generateLyrics(ctx context.Context, taskDescription string) (st
 // determineSunoProperties generates optimal Suno configuration
 func (e *Engine) determineSunoProperties(ctx context.Context, taskDescription, lyrics string) (*storage.SunoProperties, error) {
 	prompt := fmt.Sprintf("Subject Description:\n%s\n\nLyrics:\n%s", taskDescription, lyrics)
-	
+
 	response, err := e.llmClient.Chat(ctx, llm.SunoPropertiesPrompt, prompt)
 	if err != nil {
 		return nil, err
@@ -139,17 +139,17 @@ func (e *Engine) determineSunoProperties(ctx context.Context, taskDescription, l
 
 // addBracketInstructions enhances lyrics with Suno bracket instructions
 func (e *Engine) addBracketInstructions(ctx context.Context, lyrics string, props *storage.SunoProperties) (string, error) {
-	prompt := fmt.Sprintf("Original Lyrics:\n%s\n\nSong Style: %s\nVocal Type: %s", 
+	prompt := fmt.Sprintf("Original Lyrics:\n%s\n\nSong Style: %s\nVocal Type: %s",
 		lyrics, props.Style, props.VocalType)
-	
+
 	return e.llmClient.Chat(ctx, llm.BracketInstructionsPrompt, prompt)
 }
 
 // generatePersonaInspo creates premium Suno features
 func (e *Engine) generatePersonaInspo(ctx context.Context, taskDescription string, props *storage.SunoProperties) (*storage.PersonaInspo, error) {
-	prompt := fmt.Sprintf("Subject: %s\nStyle: %s\nVocal Type: %s", 
+	prompt := fmt.Sprintf("Subject: %s\nStyle: %s\nVocal Type: %s",
 		taskDescription, props.Style, props.VocalType)
-	
+
 	response, err := e.llmClient.Chat(ctx, llm.PersonaInspoPrompt, prompt)
 	if err != nil {
 		return nil, err
@@ -252,12 +252,12 @@ func truncateString(s string, maxLen int) string {
 
 func extractSunoProperties(response string) (storage.SunoProperties, error) {
 	var props storage.SunoProperties
-	
+
 	// Try to find JSON in the response
 	start := -1
 	end := -1
 	braceCount := 0
-	
+
 	for i, c := range response {
 		if c == '{' {
 			if start == -1 {
@@ -272,23 +272,23 @@ func extractSunoProperties(response string) (storage.SunoProperties, error) {
 			}
 		}
 	}
-	
+
 	if start != -1 && end != -1 {
 		if err := json.Unmarshal([]byte(response[start:end]), &props); err == nil {
 			return props, nil
 		}
 	}
-	
+
 	return props, fmt.Errorf("no valid JSON found in response")
 }
 
 func extractPersonaInspo(response string) (storage.PersonaInspo, error) {
 	var pi storage.PersonaInspo
-	
+
 	start := -1
 	end := -1
 	braceCount := 0
-	
+
 	for i, c := range response {
 		if c == '{' {
 			if start == -1 {
@@ -303,13 +303,12 @@ func extractPersonaInspo(response string) (storage.PersonaInspo, error) {
 			}
 		}
 	}
-	
+
 	if start != -1 && end != -1 {
 		if err := json.Unmarshal([]byte(response[start:end]), &pi); err == nil {
 			return pi, nil
 		}
 	}
-	
+
 	return pi, fmt.Errorf("no valid JSON found in response")
 }
-

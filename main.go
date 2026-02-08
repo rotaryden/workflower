@@ -11,8 +11,8 @@ import (
 	"workflower/config"
 	"workflower/deploy"
 	"workflower/handlers"
+	"workflower/lib/telegram"
 	"workflower/storage"
-	"workflower/telegram"
 	"workflower/ui_templates"
 	"workflower/workflow"
 

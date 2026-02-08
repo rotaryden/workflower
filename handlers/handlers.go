@@ -12,8 +12,8 @@ import (
 	"time"
 
 	"workflower/config"
+	"workflower/lib/telegram"
 	"workflower/storage"
-	"workflower/telegram"
 	"workflower/ui_templates"
 	"workflower/workflow"
 
