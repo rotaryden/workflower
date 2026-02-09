@@ -5,6 +5,7 @@ workflower-linux
 
 # Environment files
 .env
+.deploy.env
 
 # Uploads
 uploads/
