@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"workflower/config"
-	"workflower/lib/llm"
+	"workflower/lib/llm/openai"
 	"workflower/lib/suno"
 	"workflower/lib/telegram"
 	"workflower/storage"
@@ -19,7 +19,7 @@ import (
 // Engine orchestrates the song creation workflow
 type Engine struct {
 	cfg         *config.Config
-	llmClient   *llm.Client
+	llmClient   *openai.Client
 	sunoAPI     *suno.Client
 	notifier    *telegram.Notifier
 	store       *storage.Store
@@ -30,7 +30,7 @@ type Engine struct {
 func NewEngine(cfg *config.Config, store *storage.Store, promptsList *prompts.PromptsList) *Engine {
 	return &Engine{
 		cfg:         cfg,
-		llmClient:   llm.NewClient(cfg.OpenAIAPIKey, cfg.OpenAIModel),
+		llmClient:   openai.NewClient(cfg.OpenAIAPIKey, cfg.OpenAIModel),
 		sunoAPI:     suno.NewClient(cfg.SunoAPIKey, cfg.SunoBaseURL),
 		notifier:    telegram.NewNotifier(cfg.TelegramBotToken, cfg.TelegramChatID),
 		store:       store,
