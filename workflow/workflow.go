@@ -7,8 +7,8 @@ import (
 	"time"
 
 	"workflower/config"
+	"workflower/lib/llm"
 	"workflower/lib/telegram"
-	"workflower/llm"
 	"workflower/storage"
 	"workflower/suno"
 
@@ -113,14 +113,23 @@ func (e *Engine) runWorkflowSteps(ctx context.Context, state *storage.WorkflowSt
 
 // generateLyrics creates song lyrics from the task description
 func (e *Engine) generateLyrics(ctx context.Context, taskDescription string) (string, error) {
-	return e.llmClient.Chat(ctx, llm.LyricsGenerationPrompt, taskDescription)
+	prompt, err := llm.LyricsGenerationPrompt()
+	if err != nil {
+		return "", fmt.Errorf("failed to load lyrics generation prompt: %w", err)
+	}
+	return e.llmClient.Chat(ctx, prompt, taskDescription)
 }
 
 // determineSunoProperties generates optimal Suno configuration
 func (e *Engine) determineSunoProperties(ctx context.Context, taskDescription, lyrics string) (*storage.SunoProperties, error) {
-	prompt := fmt.Sprintf("Subject Description:\n%s\n\nLyrics:\n%s", taskDescription, lyrics)
+	systemPrompt, err := llm.SunoPropertiesPrompt()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load suno properties prompt: %w", err)
+	}
+	
+	userPrompt := fmt.Sprintf("Subject Description:\n%s\n\nLyrics:\n%s", taskDescription, lyrics)
 
-	response, err := e.llmClient.Chat(ctx, llm.SunoPropertiesPrompt, prompt)
+	response, err := e.llmClient.Chat(ctx, systemPrompt, userPrompt)
 	if err != nil {
 		return nil, err
 	}
@@ -139,18 +148,28 @@ func (e *Engine) determineSunoProperties(ctx context.Context, taskDescription, l
 
 // addBracketInstructions enhances lyrics with Suno bracket instructions
 func (e *Engine) addBracketInstructions(ctx context.Context, lyrics string, props *storage.SunoProperties) (string, error) {
-	prompt := fmt.Sprintf("Original Lyrics:\n%s\n\nSong Style: %s\nVocal Type: %s",
+	systemPrompt, err := llm.BracketInstructionsPrompt()
+	if err != nil {
+		return "", fmt.Errorf("failed to load bracket instructions prompt: %w", err)
+	}
+	
+	userPrompt := fmt.Sprintf("Original Lyrics:\n%s\n\nSong Style: %s\nVocal Type: %s",
 		lyrics, props.Style, props.VocalType)
 
-	return e.llmClient.Chat(ctx, llm.BracketInstructionsPrompt, prompt)
+	return e.llmClient.Chat(ctx, systemPrompt, userPrompt)
 }
 
 // generatePersonaInspo creates premium Suno features
 func (e *Engine) generatePersonaInspo(ctx context.Context, taskDescription string, props *storage.SunoProperties) (*storage.PersonaInspo, error) {
-	prompt := fmt.Sprintf("Subject: %s\nStyle: %s\nVocal Type: %s",
+	systemPrompt, err := llm.PersonaInspoPrompt()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load persona/inspo prompt: %w", err)
+	}
+	
+	userPrompt := fmt.Sprintf("Subject: %s\nStyle: %s\nVocal Type: %s",
 		taskDescription, props.Style, props.VocalType)
 
-	response, err := e.llmClient.Chat(ctx, llm.PersonaInspoPrompt, prompt)
+	response, err := e.llmClient.Chat(ctx, systemPrompt, userPrompt)
 	if err != nil {
 		return nil, err
 	}

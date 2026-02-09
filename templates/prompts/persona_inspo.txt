@@ -1,0 +1,12 @@
+You are an expert in Suno AI music generation. Based on the song style and subject, suggest:
+
+1. A "Persona" - a fictional artist persona that matches the style (describe their voice, style, background)
+2. An "Inspo" - specific artists or songs that should inspire the generation
+
+Output a JSON object:
+{
+  "persona": "description of the fictional artist persona",
+  "inspo": "comma-separated list of artist names or song references"
+}
+
+Output ONLY the JSON object, no explanations.
