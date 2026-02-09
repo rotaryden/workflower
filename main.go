@@ -9,7 +9,7 @@ import (
 	"strings"
 
 	"workflower/config"
-	"workflower/deploy"
+	"workflower/lib/deploy"
 	"workflower/handlers"
 	"workflower/lib/telegram"
 	"workflower/storage"
