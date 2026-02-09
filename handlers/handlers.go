@@ -14,7 +14,7 @@ import (
 	"workflower/config"
 	"workflower/lib/telegram"
 	"workflower/storage"
-	"workflower/ui_templates"
+	"workflower/templates/ui_templates"
 	"workflower/workflow"
 
 	"github.com/gin-gonic/gin"
