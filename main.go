@@ -11,9 +11,9 @@ import (
 	"workflower/config"
 	"workflower/deploy"
 	"workflower/handlers"
-	"workflower/lib/llm"
 	"workflower/lib/telegram"
 	"workflower/storage"
+	"workflower/templates/prompts"
 	"workflower/ui_templates"
 	"workflower/workflow"
 
@@ -83,16 +83,14 @@ func main() {
 		log.Fatalf("Failed to initialize templates: %v", err)
 	}
 
-	// Initialize LLM prompts
-	if err := llm.LoadPrompts(""); err != nil {
-		log.Fatalf("Failed to load LLM prompts: %v", err)
-	}
+	// Initialize prompts
+	promptsList := prompts.Init()
 
 	// Initialize storage
 	store := storage.NewStore()
 
 	// Initialize workflow engine
-	engine := workflow.NewEngine(cfg, store)
+	engine := workflow.NewEngine(cfg, store, promptsList)
 
 	// Initialize handlers
 	handler := handlers.NewHandler(cfg, store, engine, templates)

@@ -5,6 +5,7 @@
 	Create a Golang program running a workflow for creation a song from text input using the Suno service 
 </task_description>
 <code_design>
+    - all template and config and other static files shoud be go:embed into a single executalbe
 	- you should use simple architecture, based on well decomposed functions and modules
 	- follow SOLID and DRY principles, SOLID should be very light in object-oriented design, just simple methods on Golang objects and structures.
 	- make sure you functional decomposition is highly reusable and maintainable, including future projects with different tasks
