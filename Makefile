@@ -1,6 +1,8 @@
 .PHONY: build run dev clean deploy test
 
 include .env
+include .deploy.env
+
 export
 
 # Run the application
@@ -23,7 +25,6 @@ dev:
 clean:
 	@echo "🧹 Cleaning..."
 	rm -f $(APP_NAME)
-	rm -f $(APP_NAME)-linux
 
 # Build for Linux
 build:
@@ -34,7 +35,15 @@ build:
 # Deploy to remote server
 deploy: build
 	@echo "📦 Deploying..."
-	./scripts/deploy.sh
+	./$(APP_NAME) -D
+
+remote-status:
+	@echo "🔍 Checking remote status..."
+	ssh $(REMOTE_HOST) -p $(SSH_PORT) "sudo systemctl status $(APP_NAME)"
+
+remote-logs:
+	@echo "📜 Checking remote logs..."
+	ssh $(REMOTE_HOST) -p $(SSH_PORT) "sudo journalctl -u $(APP_NAME) -f"
 
 # Download dependencies
 deps:
