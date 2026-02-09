@@ -1,4 +1,4 @@
-package main
+package deploy
 
 import (
 	"bufio"
@@ -13,7 +13,7 @@ import (
 
 var tunnelURLRegex = regexp.MustCompile(`https://[a-zA-Z0-9-]+\.trycloudflare\.com`)
 
-func startCloudflareTunnel(ctx context.Context, port string) (string, error) {
+func StartCloudflareTunnel(ctx context.Context, port string) (string, error) {
 	if port == "" {
 		port = "8080"
 	}

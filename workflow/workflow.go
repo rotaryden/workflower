@@ -8,9 +8,9 @@ import (
 
 	"workflower/config"
 	"workflower/lib/llm"
+	"workflower/lib/suno"
 	"workflower/lib/telegram"
 	"workflower/storage"
-	"workflower/suno"
 	"workflower/templates/prompts"
 
 	"github.com/google/uuid"

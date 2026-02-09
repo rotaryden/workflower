@@ -52,7 +52,7 @@ func main() {
 	cfg := config.Load()
 
 	if *useTunnel {
-		tunnelURL, err := startCloudflareTunnel(context.Background(), cfg.ServerPort)
+		tunnelURL, err := deploy.StartCloudflareTunnel(context.Background(), cfg.ServerPort)
 		if err != nil {
 			log.Fatalf("Failed to start Cloudflare tunnel: %v", err)
 		}
