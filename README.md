@@ -25,8 +25,8 @@ Edit `.env` with your settings:
 OPENAI_API_KEY=sk-your-openai-api-key-here
 
 # Server
-SERVER_PORT=8080
-BASE_URL=http://localhost:8080
+SERVER_PORT=4000
+BASE_URL=http://yourdomain.com
 
 # OpenAI
 OPENAI_MODEL=gpt-4o

@@ -33,8 +33,17 @@ func Deploy() error {
 	remotePath := cfg.RemotePath()
 
 	// Step 3: Ensure remote directory exists
-	if _, err := client.RunCommand(fmt.Sprintf("mkdir -p %s", remotePath)); err != nil {
-		return fmt.Errorf("failed to create remote directory: %w", err)
+	// Try without sudo first (if directory exists with correct permissions)
+	mkdirCmd := fmt.Sprintf("mkdir -p %s", remotePath)
+	_, err = client.RunCommand(mkdirCmd)
+	if err != nil {
+		// If that fails, try with sudo
+		mkdirCmd = fmt.Sprintf("sudo mkdir -p %s && sudo chown %s:%s %s",
+			remotePath, cfg.ServiceUser, cfg.ServiceGroup, remotePath)
+		output, err := client.RunCommand(mkdirCmd)
+		if err != nil {
+			return fmt.Errorf("failed to create remote directory (ensure user has sudo NOPASSWD or create directory manually): %s: %w", output, err)
+		}
 	}
 
 	// Step 4: Copy binary
@@ -53,12 +62,12 @@ func Deploy() error {
 		}
 	}
 
-	// Step 6: Copy .env_example if it exists
-	if fileExists(".env_example") {
-		fmt.Println("📝 Copying .env_example file...")
-		envExamplePath := filepath.Join(remotePath, ".env_example")
-		if err := client.CopyFile(".env_example", envExamplePath); err != nil {
-			return fmt.Errorf("failed to copy .env_example: %w", err)
+	// Step 6: Copy .deploy.env if it exists
+	if fileExists(".deploy.env") {
+		fmt.Println("📝 Copying .deploy.env file...")
+		envExamplePath := filepath.Join(remotePath, ".deploy.env")
+		if err := client.CopyFile(".deploy.env", envExamplePath); err != nil {
+			return fmt.Errorf("failed to copy .deploy.env: %w", err)
 		}
 	}
 
