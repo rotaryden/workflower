@@ -32,7 +32,7 @@ func NewEngine(cfg *config.Config, store *storage.Store, promptsList *prompts.Pr
 	return &Engine{
 		cfg:         cfg,
 		llmClient:   openai.NewClient(cfg.OpenAIAPIKey, cfg.OpenAIModel),
-		sunoAPI:     suno.NewClient(cfg.SunoAPIKey, cfg.SunoBaseURL),
+		sunoAPI:     suno.NewClient(cfg.SunoBaseURL),
 		notifier:    telegram.NewNotifier(cfg.TelegramBotToken, cfg.TelegramChatID),
 		store:       store,
 		promptsList: promptsList,
@@ -182,7 +182,7 @@ func (e *Engine) ApproveWorkflow(ctx context.Context, state *storage.WorkflowSta
 	return nil
 }
 
-// submitToSuno sends the song request to Suno API
+// submitToSuno sends the song request to Suno API via suno-api server
 func (e *Engine) submitToSuno(ctx context.Context, state *storage.WorkflowState) {
 	props := state.EditedProperties
 	if props == nil {
@@ -194,40 +194,61 @@ func (e *Engine) submitToSuno(ctx context.Context, state *storage.WorkflowState)
 		lyrics = state.LyricsWithBrackets
 	}
 
-	req := &suno.GenerateRequest{
-		Lyrics:         lyrics,
-		Style:          props.Style,
-		VocalType:      props.VocalType,
-		Weirdness:      props.Weirdness,
-		StyleInfluence: props.StyleInfluence,
+	// Construct a descriptive title from the task description
+	title := truncateString(state.TaskDescription, 50)
+	
+	// Build the style/tags string
+	tags := props.Style
+	if props.VocalType != "" {
+		tags += ", " + props.VocalType
 	}
 
-	// Add premium features if available
-	if state.IsPremium && state.PersonaInspo != nil {
-		req.Persona = state.PersonaInspo.Persona
-		req.Inspo = state.PersonaInspo.Inspo
+	// Use CustomGenerate for full control over the song
+	req := &suno.CustomGenerateRequest{
+		Prompt:           lyrics,
+		Tags:             tags,
+		Title:            title,
+		MakeInstrumental: false,
+		WaitAudio:        false, // Don't wait, we'll poll for completion
 	}
 
-	// Add audio reference if provided
-	if state.AudioFilePath != "" {
-		req.AudioReferencePath = state.AudioFilePath
-	}
-
-	result, err := e.sunoAPI.Generate(ctx, req)
+	results, err := e.sunoAPI.CustomGenerate(ctx, req)
 	if err != nil {
 		e.handleError(state, "suno submission", err)
 		return
 	}
 
-	state.SunoJobID = result.JobID
-	state.SunoResult = result.Status
+	// Store the IDs of generated songs (typically 2 variations)
+	if len(results) > 0 {
+		state.SunoJobID = results[0].ID
+		state.Status = "generating"
+		e.store.Save(state)
+
+		// Start polling for completion
+		go e.pollSunoCompletion(ctx, state, results[0].ID)
+	} else {
+		e.handleError(state, "suno submission", fmt.Errorf("no results returned from Suno"))
+	}
+}
+
+// pollSunoCompletion polls the suno-api server until the audio is ready
+func (e *Engine) pollSunoCompletion(ctx context.Context, state *storage.WorkflowState, audioID string) {
+	// Poll every 5 seconds, max 60 retries (5 minutes)
+	audio, err := e.sunoAPI.WaitForCompletion(ctx, audioID, 5*time.Second, 60)
+	if err != nil {
+		e.handleError(state, "suno completion", err)
+		return
+	}
+
+	state.SunoResult = audio.Status
 	state.Status = "completed"
 	e.store.Save(state)
 
-	// Notify completion
-	message := fmt.Sprintf("✅ Song generation completed!\n\nJob ID: %s\nStatus: %s", result.JobID, result.Status)
+	// Notify completion with audio URL
+	message := fmt.Sprintf("✅ Song generation completed!\n\n🎵 Title: %s\n🔗 Audio: %s\n📹 Video: %s",
+		audio.Title, audio.AudioURL, audio.VideoURL)
 	if err := e.notifier.Send(ctx, message); err != nil {
-		slog.Warn("Failed to send completion notification", "error", err, "workflow_id", state.ID, "job_id", result.JobID)
+		slog.Warn("Failed to send completion notification", "error", err, "workflow_id", state.ID, "audio_id", audioID)
 	}
 }
 

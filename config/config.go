@@ -15,8 +15,7 @@ type Config struct {
 	OpenAIAPIKey string
 	OpenAIModel  string
 
-	// Suno
-	SunoAPIKey  string
+	// Suno (via suno-api server)
 	SunoBaseURL string
 
 	// Telegram
@@ -42,9 +41,8 @@ func Load() *Config {
 		OpenAIAPIKey: getEnv("OPENAI_API_KEY", ""),
 		OpenAIModel:  getEnv("OPENAI_MODEL", "gpt-4o"),
 
-		// Suno
-		SunoAPIKey:  getEnv("SUNO_API_KEY", ""),
-		SunoBaseURL: getEnv("SUNO_BASE_URL", "https://studio-api.suno.ai"),
+		// Suno (via suno-api server - see lib/suno/README.md for setup)
+		SunoBaseURL: getEnv("SUNO_BASE_URL", "http://localhost:3000"),
 
 		// Telegram
 		TelegramBotToken:      getEnv("TELEGRAM_BOT_TOKEN", ""),

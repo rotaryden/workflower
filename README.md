@@ -5,8 +5,9 @@ Suno AI workflow automation server with Telegram integration and LLM-powered mus
 ## Local Machine Prerequisites
 
 - Go 1.21+
+- Node.js 18+ (for running the suno-api server)
 - OpenAI API key
-- Suno API key (optional)
+- Suno account with cookie + 2Captcha API key (for music generation)
 - Telegram bot token (optional, for notifications)
 - Cloudflare tunnel (optional, for local webhook testing)
 
@@ -47,6 +48,52 @@ rio ALL=(ALL) NOPASSWD: /bin/mv /tmp/aiwf_*.service /etc/systemd/system/aiwf_*.s
 rio ALL=(ALL) NOPASSWD: /bin/journalctl -u aiwf_*.service -f
 ```
 
+
+## Suno API Setup
+
+**Important:** Suno.ai does not have an official API. This project uses the third-party [suno-api](https://github.com/gcui-art/suno-api) server.
+
+### Quick Setup
+
+1. **Clone and install suno-api** (on the same VPS or locally):
+
+```bash
+git clone https://github.com/gcui-art/suno-api.git
+cd suno-api
+npm install
+```
+
+2. **Configure suno-api** - Create `.env` in the suno-api directory:
+
+```env
+SUNO_COOKIE=<your-cookie-from-suno.ai>
+TWOCAPTCHA_KEY=<your-2captcha-api-key>
+BROWSER=chromium
+BROWSER_GHOST_CURSOR=false
+BROWSER_LOCALE=en
+BROWSER_HEADLESS=true
+```
+
+3. **Get your Suno cookie:**
+   - Visit [suno.ai/create](https://suno.ai/create)
+   - Open DevTools (F12) → Network tab → Refresh
+   - Find request with `?__clerk_api_version`
+   - Copy the entire `Cookie` header value
+
+4. **Get 2Captcha API key:**
+   - Sign up at [2captcha.com](https://2captcha.com) (or [rucaptcha.com](https://rucaptcha.com) for Russia/Belarus)
+   - Top up your balance
+   - Copy your API key
+
+5. **Start the suno-api server:**
+
+```bash
+npm run dev
+```
+
+Test it: `curl http://localhost:3000/api/get_limit`
+
+For detailed instructions, see [`lib/suno/README.md`](lib/suno/README.md).
 
 ## Configuration
 
@@ -212,10 +259,42 @@ make deps
 - `-L` — Start with Cloudflare tunnel (local development)
 - `-setup` — [internal use] Run remote setup (used internally during deployment)
 
+## Production Deployment Notes
+
+### Running suno-api as a Service
+
+For production, run suno-api as a systemd service. Create `/etc/systemd/system/suno-api.service`:
+
+```ini
+[Unit]
+Description=Suno API Service
+After=network.target
+
+[Service]
+Type=simple
+User=www-data
+WorkingDirectory=/opt/suno-api
+Environment=NODE_ENV=production
+ExecStart=/usr/bin/npm start
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
+```
+
+Enable and start:
+```bash
+sudo systemctl enable suno-api
+sudo systemctl start suno-api
+```
+
 ## Notes
 
 - `OPENAI_API_KEY` is **required**
+- **suno-api server must be running** before starting workflower (for music generation)
 - Telegram features work without configuration (notifications disabled)
 - Cloudflare tunnel requires `cloudflared` binary in PATH
 - Deployment requires SSH access with key authentication
 - Remote service auto-starts on server reboot (systemd)
+- **Security:** Never expose the suno-api server to the public internet
