@@ -4,13 +4,14 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"log"
+	"log/slog"
 	"os"
 	"strings"
 
 	"workflower/config"
 	"workflower/lib/deploy"
 	"workflower/handlers"
+	"workflower/lib/logger"
 	"workflower/lib/telegram"
 	"workflower/storage"
 	"workflower/templates/prompts"
@@ -22,6 +23,9 @@ import (
 )
 
 func main() {
+	// Initialize logger
+	logger.Init()
+
 	deployFlag := flag.Bool("D", false, "Deploy to remote server")
 	setupFlag := flag.Bool("setup", false, "Run remote setup (used during deployment)")
 	useTunnel := flag.Bool("L", false, "Start Cloudflare tunnel and override BASE_URL/TELEGRAM_WEBHOOK_URL")
@@ -30,7 +34,8 @@ func main() {
 	// Handle deployment mode
 	if *deployFlag {
 		if err := deploy.Deploy(); err != nil {
-			log.Fatalf("Deployment failed: %v", err)
+			slog.Error("Deployment failed", "error", err)
+			os.Exit(1)
 		}
 		return
 	}
@@ -38,14 +43,15 @@ func main() {
 	// Handle remote setup mode
 	if *setupFlag {
 		if err := deploy.Setup(); err != nil {
-			log.Fatalf("Setup failed: %v", err)
+			slog.Error("Setup failed", "error", err)
+			os.Exit(1)
 		}
 		return
 	}
 
 	// Load .env file if it exists
 	if err := godotenv.Load(); err != nil {
-		log.Println("No .env file found, using environment variables")
+		slog.Info("No .env file found, using environment variables")
 	}
 
 	// Load configuration
@@ -54,7 +60,8 @@ func main() {
 	if *useTunnel {
 		tunnelURL, err := deploy.StartCloudflareTunnel(context.Background(), cfg.ServerPort)
 		if err != nil {
-			log.Fatalf("Failed to start Cloudflare tunnel: %v", err)
+			slog.Error("Failed to start Cloudflare tunnel", "error", err)
+			os.Exit(1)
 		}
 
 		baseURL := strings.TrimRight(tunnelURL, "/")
@@ -68,19 +75,21 @@ func main() {
 		}
 		cfg.TelegramWebhookURL = cfg.BaseURL + webhookPath
 
-		log.Printf("🌐 Cloudflare tunnel active: %s", cfg.BaseURL)
-		log.Printf("🔔 Telegram webhook URL: %s", cfg.TelegramWebhookURL)
+		slog.Info("Cloudflare tunnel active", "url", cfg.BaseURL)
+		slog.Info("Telegram webhook URL configured", "url", cfg.TelegramWebhookURL)
 	}
 
 	// Validate required configuration
 	if cfg.OpenAIAPIKey == "" {
-		log.Fatal("OPENAI_API_KEY is required")
+		slog.Error("OPENAI_API_KEY is required")
+		os.Exit(1)
 	}
 
 	// Initialize templates
 	templates, err := ui_templates.Init()
 	if err != nil {
-		log.Fatalf("Failed to initialize templates: %v", err)
+		slog.Error("Failed to initialize templates", "error", err)
+		os.Exit(1)
 	}
 
 	// Initialize prompts
@@ -111,25 +120,26 @@ func main() {
 
 	// Start server
 	addr := fmt.Sprintf(":%s", cfg.ServerPort)
-	log.Printf("🎵 Suno Workflow Server starting on http://localhost%s", addr)
-	log.Printf("📝 OpenAI Model: %s", cfg.OpenAIModel)
+	slog.Info("Suno Workflow Server starting", "address", fmt.Sprintf("http://localhost%s", addr))
+	slog.Info("OpenAI configuration", "model", cfg.OpenAIModel)
 	if cfg.TelegramBotToken != "" {
-		log.Printf("📱 Telegram notifications enabled")
-		log.Printf("🔔 Telegram webhook path: %s", cfg.TelegramWebhookPath)
+		slog.Info("Telegram notifications enabled")
+		slog.Info("Telegram webhook path configured", "path", cfg.TelegramWebhookPath)
 		if cfg.TelegramWebhookURL != "" {
 			notifier := telegram.NewNotifier(cfg.TelegramBotToken, cfg.TelegramChatID)
 			if err := notifier.SetWebhook(context.Background(), cfg.TelegramWebhookURL, cfg.TelegramWebhookSecret); err != nil {
-				log.Printf("⚠️  Failed to set Telegram webhook: %v", err)
+				slog.Warn("Failed to set Telegram webhook", "error", err)
 			} else {
-				log.Printf("✅ Telegram webhook registered: %s", cfg.TelegramWebhookURL)
+				slog.Info("Telegram webhook registered", "url", cfg.TelegramWebhookURL)
 			}
 		}
 	}
 	if cfg.EnablePremiumFeatures {
-		log.Printf("⭐ Premium features enabled by default")
+		slog.Info("Premium features enabled by default")
 	}
 
 	if err := r.Run(addr); err != nil {
-		log.Fatalf("Failed to start server: %v", err)
+		slog.Error("Failed to start server", "error", err)
+		os.Exit(1)
 	}
 }

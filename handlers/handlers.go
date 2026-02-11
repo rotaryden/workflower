@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -301,7 +302,7 @@ func (h *Handler) handleTelegramUpdate(update telegram.Update) {
 
 	chatID := strconv.FormatInt(message.Chat.ID, 10)
 	if h.cfg.TelegramChatID != "" && chatID != h.cfg.TelegramChatID {
-		fmt.Printf("Telegram webhook ignored chat %s\n", chatID)
+		slog.Info("Telegram webhook ignored chat", "chat_id", chatID, "expected", h.cfg.TelegramChatID)
 		return
 	}
 
@@ -398,7 +399,7 @@ func (h *Handler) replyTelegramHelp(chatID string) {
 
 func (h *Handler) replyTelegramText(chatID, message string) {
 	if err := h.notifier.SendToChat(context.Background(), chatID, message); err != nil {
-		fmt.Printf("Warning: failed to send Telegram reply: %v\n", err)
+		slog.Warn("Failed to send Telegram reply", "error", err, "chat_id", chatID)
 	}
 }
 

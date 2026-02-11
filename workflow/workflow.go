@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"time"
 
 	"workflower/config"
@@ -110,7 +111,7 @@ func (e *Engine) runWorkflowSteps(ctx context.Context, state *storage.WorkflowSt
 
 	if err := e.notifier.Send(ctx, message); err != nil {
 		// Log but don't fail the workflow
-		fmt.Printf("Warning: failed to send Telegram notification: %v\n", err)
+		slog.Warn("Failed to send Telegram notification", "error", err, "workflow_id", state.ID)
 	}
 }
 
@@ -226,7 +227,7 @@ func (e *Engine) submitToSuno(ctx context.Context, state *storage.WorkflowState)
 	// Notify completion
 	message := fmt.Sprintf("✅ Song generation completed!\n\nJob ID: %s\nStatus: %s", result.JobID, result.Status)
 	if err := e.notifier.Send(ctx, message); err != nil {
-		fmt.Printf("Warning: failed to send completion notification: %v\n", err)
+		slog.Warn("Failed to send completion notification", "error", err, "workflow_id", state.ID, "job_id", result.JobID)
 	}
 }
 
@@ -241,7 +242,7 @@ func (e *Engine) handleError(state *storage.WorkflowState, step string, err erro
 	state.Status = "failed"
 	state.ErrorMsg = fmt.Sprintf("%s failed: %v", step, err)
 	e.store.Save(state)
-	fmt.Printf("Workflow %s error at %s: %v\n", state.ID, step, err)
+	slog.Error("Workflow error", "workflow_id", state.ID, "step", step, "error", err)
 }
 
 // Helper functions

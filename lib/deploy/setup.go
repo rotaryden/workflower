@@ -2,6 +2,7 @@ package deploy
 
 import (
 	"fmt"
+	"log/slog"
 	"os"
 	"os/exec"
 	"strings"
@@ -12,7 +13,7 @@ const TEMP_SERVICE_PATH = "/tmp"
 
 // Setup performs remote VPS setup (called with --setup flag)
 func Setup() error {
-	fmt.Println("🔧 Starting remote setup...")
+	slog.Info("Starting remote setup")
 
 	// Load configuration from .env file in current directory
 	cfg, err := LoadConfig()
@@ -28,7 +29,7 @@ func Setup() error {
 	}
 
 	// Step 1: Generate service file
-	fmt.Println("📝 Generating systemd service file...")
+	slog.Info("Generating systemd service file")
 	serviceContent, err := GenerateServiceFile(cfg)
 	if err != nil {
 		return fmt.Errorf("failed to generate service file: %w", err)
@@ -49,7 +50,7 @@ func Setup() error {
 	}
 
 	if !serviceExists {
-		fmt.Printf("🔧 Setting up %s service...\n", serviceName)
+		slog.Info("Setting up service", "service", serviceName)
 
 		// Install systemd service
 		if err := installService(tmpServicePath, serviceName); err != nil {
@@ -61,9 +62,9 @@ func Setup() error {
 			return fmt.Errorf("failed to enable service: %w", err)
 		}
 
-		fmt.Println("✅ Service enabled")
+		slog.Info("Service enabled", "service", serviceName)
 	} else {
-		fmt.Println("✅ Service already configured and enabled")
+		slog.Info("Service already configured and enabled", "service", serviceName)
 	}
 
 	// Step 3: Restart or start the service
@@ -72,8 +73,7 @@ func Setup() error {
 	}
 
 	// Step 4: Show status
-	fmt.Println()
-	fmt.Println("📊 Service status:")
+	slog.Info("Service status")
 	showServiceStatus(serviceName)
 
 	// Cleanup temporary service file
@@ -128,7 +128,7 @@ func installService(tmpPath, serviceName string) error {
 		return fmt.Errorf("failed to reload systemd: '%s' %w", serviceName, err)
 	}
 
-	fmt.Println("✅ Systemd service installed")
+	slog.Info("Systemd service installed", "service", serviceName)
 	return nil
 }
 
@@ -148,10 +148,10 @@ func restartOrStartService(serviceName string) error {
 	isActive := cmd.Run() == nil
 
 	if isActive {
-		fmt.Println("🔄 Restarting service...")
+		slog.Info("Restarting service", "service", serviceName)
 		cmd = exec.Command("sudo", "systemctl", "restart", serviceName)
 	} else {
-		fmt.Println("🚀 Starting service...")
+		slog.Info("Starting service", "service", serviceName)
 		cmd = exec.Command("sudo", "systemctl", "start", serviceName)
 	}
 

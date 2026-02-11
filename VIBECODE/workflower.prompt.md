@@ -5,6 +5,7 @@
 	Create a Golang program running a workflow for creation a song from text input using the Suno service 
 </task_description>
 <code_design>
+    - use slog library to do logging, and do NOT use fmt.Print-like functions
 	- all constants and hardcoded things should be factored onut into top contant declarations
     - all template and config and other static files shoud be go:embed into a single executalbe
 	- you should use simple architecture, based on well decomposed functions and modules
