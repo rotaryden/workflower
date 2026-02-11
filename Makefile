@@ -8,7 +8,7 @@ export
 # Run the application
 run: build
 	@echo "🚀 Running..."
-	./$(APP_NAME)
+	./build/$(APP_NAME)
 
 # Development mode with auto-reload (requires air)
 dev:
@@ -24,18 +24,19 @@ dev:
 # Clean build artifacts
 clean:
 	@echo "🧹 Cleaning..."
-	rm -f $(APP_NAME)
+	rm -rf build/
 
 # Build for Linux
 build:
 	go mod tidy
 	@echo "🐧 Building for Linux..."
-	GOOS=linux GOARCH=amd64 go build -o $(APP_NAME) .
+	@mkdir -p build
+	GOOS=linux GOARCH=amd64 go build -o build/$(APP_NAME) .
 
 # Deploy to remote server
 deploy: build
 	@echo "📦 Deploying..."
-	./$(APP_NAME) -D
+	./build/$(APP_NAME) -D
 
 remote-status:
 	@echo "🔍 Checking remote status..."

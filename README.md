@@ -10,6 +10,18 @@ Suno AI workflow automation server with Telegram integration and LLM-powered mus
 - Telegram bot token (optional, for notifications)
 - Cloudflare tunnel (optional, for local webhook testing)
 
+**Install cloudflared:**
+
+```bash
+# Linux
+wget https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64
+chmod +x cloudflared-linux-amd64
+sudo mv cloudflared-linux-amd64 /usr/local/bin/cloudflared
+
+# macOS
+brew install cloudflared
+```
+
 ## VPS prerequisites
 
 - Ubuntu 24.04+ server
@@ -30,8 +42,9 @@ add the following line:
 
 ```bash
 rio ALL=(ALL) NOPASSWD: /bin/systemctl ^(start|restart|enable|status) aiwf_.*\.service$
-rio ALL=(ALL) NOPASSWD: /bin/systemctl daemon-reload         
+rio ALL=(ALL) NOPASSWD: /bin/systemctl daemon-reload
 rio ALL=(ALL) NOPASSWD: /bin/mv /tmp/aiwf_*.service /etc/systemd/system/aiwf_*.service
+rio ALL=(ALL) NOPASSWD: /bin/journalctl -u aiwf_*.service -f
 ```
 
 
@@ -43,34 +56,9 @@ rio ALL=(ALL) NOPASSWD: /bin/mv /tmp/aiwf_*.service /etc/systemd/system/aiwf_*.s
 cp .env_example .env
 ```
 
-Edit `.env` with your settings:
+Edit `.env` with your settings
 
-```bash
-# Required
-OPENAI_API_KEY=sk-your-openai-api-key-here
-
-# Server
-SERVER_PORT=4000
-BASE_URL=http://yourdomain.com
-
-# OpenAI
-OPENAI_MODEL=gpt-4o
-
-# Suno (optional)
-SUNO_API_KEY=your-suno-api-key
-SUNO_BASE_URL=https://studio-api.suno.ai
-
-# Telegram (optional)
-TELEGRAM_BOT_TOKEN=your-bot-token
-TELEGRAM_CHAT_ID=your-chat-id
-TELEGRAM_WEBHOOK_PATH=/telegram/webhook
-TELEGRAM_WEBHOOK_SECRET=your-webhook-secret
-
-# Features
-ENABLE_PREMIUM_FEATURES=true
-MAX_AUDIO_SIZE_MB=50
-GIN_MODE=release
-```
+APP_NAME will be used ass binary name as well
 
 ### 2. Deployment Environment (`.deploy.env`)
 
@@ -96,7 +84,7 @@ SSH_KEY_PATH=/path/to/key  # Optional, uses system SSH config by default
 make build
 ```
 
-Builds Linux AMD64 binary as `./workflower`
+Builds Linux AMD64 binary as `./build/your_app_name`
 
 ### Development Mode
 
@@ -106,51 +94,11 @@ Auto-reload on file changes (installs `air` if needed):
 make dev
 ```
 
-## Run
-
-### Standard Mode
-
-```bash
-./workflower
-```
-
-Access at `http://localhost:8080`
-
-### Local Mode with Cloudflare Tunnel
-
-Expose local server via public HTTPS URL and auto-configure Telegram webhook:
-
-```bash
-./workflower -L
-```
-
-This will:
-- Start Cloudflare tunnel (requires `cloudflared` installed)
-- Get public HTTPS URL (e.g., `https://xyz.trycloudflare.com`)
-- Override `BASE_URL` and `TELEGRAM_WEBHOOK_URL` automatically
-- Register webhook with Telegram bot
-
-**Install cloudflared:**
-
-```bash
-# Linux
-wget https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64
-chmod +x cloudflared-linux-amd64
-sudo mv cloudflared-linux-amd64 /usr/local/bin/cloudflared
-
-# macOS
-brew install cloudflared
-```
+Access at `http://localhost:4000`
 
 ## Deploy
 
 ### Deploy to Remote Server
-
-```bash
-./workflower -D
-```
-
-or
 
 ```bash
 make deploy
@@ -179,11 +127,21 @@ make remote-logs
 
 ## Testing Telegram Integration
 
-### 1. Local Testing with Tunnel
+### 1. Local Testing with CLoudflare Tunnel
+
+Expose local server via public HTTPS URL and auto-configure Telegram webhook:
+
 
 ```bash
-./workflower -L
+./build/your_app_name -L
 ```
+
+This will:
+- Start Cloudflare tunnel (requires `cloudflared` installed)
+- Get public HTTPS URL (e.g., `https://xyz.trycloudflare.com`)
+- Override `BASE_URL` and `TELEGRAM_WEBHOOK_URL` automatically
+- Register webhook with Telegram bot
+
 
 Look for output:
 ```
@@ -252,7 +210,7 @@ make deps
 
 - `-D` — Deploy to remote server
 - `-L` — Start with Cloudflare tunnel (local development)
-- `-setup` — Run remote setup (used internally during deployment)
+- `-setup` — [internal use] Run remote setup (used internally during deployment)
 
 ## Notes
 

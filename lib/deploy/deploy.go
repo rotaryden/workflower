@@ -3,9 +3,10 @@ package deploy
 import (
 	"fmt"
 	"os"
-	"os/exec"
 	"path/filepath"
 )
+
+const BUILD_DIR = "build"
 
 // Deploy performs the full deployment workflow
 func Deploy() error {
@@ -15,14 +16,7 @@ func Deploy() error {
 		return fmt.Errorf("configuration error: %w", err)
 	}
 
-	// Step 1: Build binary for Linux
-	fmt.Println("🚀 Building for Linux...")
-	if err := buildLinuxBinary(cfg.AppName); err != nil {
-		return fmt.Errorf("build failed: %w", err)
-	}
-	defer cleanupBinary(cfg.AppName)
-
-	// Step 2: Establish SSH connection
+	// Step 1: Establish SSH connection
 	fmt.Printf("📦 Deploying to %s:%s...\n", cfg.RemoteHost, cfg.RemotePath())
 	client, err := NewSSHClient(cfg)
 	if err != nil {
@@ -49,7 +43,8 @@ func Deploy() error {
 	// Step 4: Copy binary
 	fmt.Println("📤 Copying binary...")
 	binaryPath := filepath.Join(remotePath, cfg.AppName)
-	if err := client.CopyFile(cfg.AppName, binaryPath); err != nil {
+	sourceBinary := filepath.Join(BUILD_DIR, cfg.AppName)
+	if err := client.CopyFile(sourceBinary, binaryPath); err != nil {
 		return fmt.Errorf("failed to copy binary: %w", err)
 	}
 
@@ -89,36 +84,12 @@ func Deploy() error {
 	fmt.Println("✅ Deployment complete!")
 	fmt.Println()
 	fmt.Println("📋 Useful commands:")
-	fmt.Printf("  View logs: ssh %s 'sudo journalctl -u %s -f'\n", cfg.RemoteHost, cfg.AppName)
-	fmt.Printf("  Check status: ssh %s 'sudo systemctl status %s'\n", cfg.RemoteHost, cfg.AppName)
+	fmt.Printf("  View logs: ssh %s 'sudo journalctl -u %s -f'\n", cfg.RemoteHost, getServiceName(cfg.AppName))
+	fmt.Printf("  Check status: ssh %s 'sudo systemctl status %s'\n", cfg.RemoteHost, getServiceName(cfg.AppName))
 	fmt.Printf("  Edit .env: ssh %s 'sudo nano %s/.env && sudo systemctl restart %s'\n",
-		cfg.RemoteHost, remotePath, cfg.AppName)
+		cfg.RemoteHost, remotePath, getServiceName(cfg.AppName))
 
 	return nil
-}
-
-// buildLinuxBinary builds the application for Linux AMD64
-func buildLinuxBinary(appName string) error {
-	cmd := exec.Command("go", "build", "-o", appName, ".")
-	cmd.Env = append(os.Environ(),
-		"GOOS=linux",
-		"GOARCH=amd64",
-	)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-
-	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("go build failed: %w", err)
-	}
-
-	return nil
-}
-
-// cleanupBinary removes the locally built binary
-func cleanupBinary(appName string) {
-	if err := os.Remove(appName); err != nil && !os.IsNotExist(err) {
-		fmt.Printf("⚠️  Failed to cleanup binary: %v\n", err)
-	}
 }
 
 // fileExists checks if a file exists

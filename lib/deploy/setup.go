@@ -7,7 +7,6 @@ import (
 	"strings"
 )
 
-const SERVICE_PREFIX = "aiwf_"
 const SYSTEMD_PATH = "/etc/systemd/system"
 const TEMP_SERVICE_PATH = "/tmp"
 
@@ -81,10 +80,6 @@ func Setup() error {
 	os.Remove(tmpServicePath)
 
 	return nil
-}
-
-func getServiceName(appName string) string {
-	return fmt.Sprintf("%s%s.service", SERVICE_PREFIX, appName)
 }
 
 // checkServiceExists checks if a systemd service exists and is enabled

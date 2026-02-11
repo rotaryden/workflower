@@ -1,4 +1,5 @@
 # Binaries
+build/
 workflower
 workflower-linux
 *.exe
