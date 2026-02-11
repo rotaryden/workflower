@@ -5,6 +5,10 @@ include .deploy.env
 
 export
 
+SERVICE_PREFIX = aiwf_
+
+SERVICE_NAME = $(SERVICE_PREFIX)$(APP_NAME).service
+
 # Run the application
 run: build
 	@echo "🚀 Running..."
@@ -40,11 +44,11 @@ deploy: build
 
 remote-status:
 	@echo "🔍 Checking remote status..."
-	ssh $(REMOTE_HOST) -p $(SSH_PORT) "sudo systemctl status $(APP_NAME)"
+	ssh -i $(SSH_KEY_PATH) $(REMOTE_HOST) -p $(SSH_PORT) "systemctl status $(SERVICE_NAME)"
 
 remote-logs:
 	@echo "📜 Checking remote logs..."
-	ssh $(REMOTE_HOST) -p $(SSH_PORT) "sudo journalctl -u $(APP_NAME) -f"
+	ssh -i $(SSH_KEY_PATH) $(REMOTE_HOST) -p $(SSH_PORT) "sudo journalctl -u $(SERVICE_NAME) -f"
 
 # Download dependencies
 deps:

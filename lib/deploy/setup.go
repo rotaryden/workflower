@@ -164,7 +164,7 @@ func restartOrStartService(serviceName string) error {
 
 // showServiceStatus displays the service status
 func showServiceStatus(serviceName string) {
-	cmd := exec.Command("sudo", "systemctl", "status", serviceName, "--no-pager", "-l")
+	cmd := exec.Command("systemctl", "status", serviceName, "--no-pager", "-l")
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	cmd.Run() // Ignore errors, just show status
