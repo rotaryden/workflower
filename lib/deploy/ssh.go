@@ -2,7 +2,6 @@ package deploy
 
 import (
 	"fmt"
-	"io"
 	"net"
 	"os"
 	"path/filepath"
@@ -85,55 +84,49 @@ func (c *SSHClient) RunCommandWithOutput(cmd string) error {
 	return nil
 }
 
-// CopyFile copies a local file to the remote server using SCP
+// CopyFile copies a local file to the remote server using SSH
 func (c *SSHClient) CopyFile(localPath, remotePath string) error {
-	// Open local file
-	file, err := os.Open(localPath)
+	// Read local file
+	data, err := os.ReadFile(localPath)
 	if err != nil {
-		return fmt.Errorf("failed to open local file: %w", err)
-	}
-	defer file.Close()
-
-	// Get file info
-	fileInfo, err := file.Stat()
-	if err != nil {
-		return fmt.Errorf("failed to stat file: %w", err)
+		return fmt.Errorf("failed to read local file: %w", err)
 	}
 
-	// Create SCP session
+	// Create remote file via SSH command
+	// First, write to temp file, then move to final location
+	tmpPath := remotePath + ".tmp"
+	
+	// Write file content
 	session, err := c.client.NewSession()
 	if err != nil {
 		return fmt.Errorf("failed to create session: %w", err)
 	}
 	defer session.Close()
 
-	// Set up pipes
 	stdin, err := session.StdinPipe()
 	if err != nil {
 		return fmt.Errorf("failed to create stdin pipe: %w", err)
 	}
 
-	// Start SCP in sink mode
-	if err := session.Start(fmt.Sprintf("scp -t %s", remotePath)); err != nil {
-		return fmt.Errorf("failed to start scp: %w", err)
+	// Start cat command to write file
+	if err := session.Start(fmt.Sprintf("cat > %s", tmpPath)); err != nil {
+		return fmt.Errorf("failed to start cat command: %w", err)
 	}
 
-	// Send file header
-	fmt.Fprintf(stdin, "C%04o %d %s\n", fileInfo.Mode().Perm(), fileInfo.Size(), filepath.Base(remotePath))
-
-	// Copy file content
-	if _, err := io.Copy(stdin, file); err != nil {
-		return fmt.Errorf("failed to copy file: %w", err)
+	// Write file data
+	if _, err := stdin.Write(data); err != nil {
+		return fmt.Errorf("failed to write file data: %w", err)
 	}
-
-	// Send null byte to indicate end
-	fmt.Fprint(stdin, "\x00")
-
 	stdin.Close()
 
-	// Wait for session to complete
+	// Wait for cat to complete
 	if err := session.Wait(); err != nil {
-		return fmt.Errorf("scp failed: %w", err)
+		return fmt.Errorf("failed to write remote file: %w", err)
+	}
+
+	// Move temp file to final location
+	if _, err := c.RunCommand(fmt.Sprintf("mv %s %s", tmpPath, remotePath)); err != nil {
+		return fmt.Errorf("failed to move file to final location: %w", err)
 	}
 
 	return nil

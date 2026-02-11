@@ -18,7 +18,6 @@ EnvironmentFile={{.EnvFile}}
 NoNewPrivileges=true
 PrivateTmp=true
 ProtectSystem=strict
-ProtectHome=true
 ReadWritePaths={{.ReadWritePaths}}
 
 [Install]

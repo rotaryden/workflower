@@ -43,36 +43,34 @@ func Setup() error {
 		return fmt.Errorf("failed to write service file: %w", err)
 	}
 
-	// Step 2: Check if service exists and is enabled
-	serviceExists, err := checkServiceExists(serviceName)
+	// Step 2: Install/update systemd service (always update to ensure latest config)
+	slog.Info("Installing/updating service file", "service", serviceName)
+	if err := installService(tmpServicePath, serviceName); err != nil {
+		return fmt.Errorf("failed to install service: %w", err)
+	}
+
+	// Step 3: Check if service is enabled, and enable it if not
+	serviceEnabled, err := checkServiceEnabled(serviceName)
 	if err != nil {
 		return fmt.Errorf("failed to check service status: %w", err)
 	}
 
-	if !serviceExists {
-		slog.Info("Setting up service", "service", serviceName)
-
-		// Install systemd service
-		if err := installService(tmpServicePath, serviceName); err != nil {
-			return fmt.Errorf("failed to install service: %w", err)
-		}
-
-		// Enable the service
+	if !serviceEnabled {
+		slog.Info("Enabling service", "service", serviceName)
 		if err := enableService(serviceName); err != nil {
 			return fmt.Errorf("failed to enable service: %w", err)
 		}
-
 		slog.Info("Service enabled", "service", serviceName)
 	} else {
-		slog.Info("Service already configured and enabled", "service", serviceName)
+		slog.Info("Service already enabled", "service", serviceName)
 	}
 
-	// Step 3: Restart or start the service
+	// Step 4: Restart or start the service
 	if err := restartOrStartService(serviceName); err != nil {
 		return fmt.Errorf("failed to start service: %w", err)
 	}
 
-	// Step 4: Show status
+	// Step 5: Show status
 	slog.Info("Service status")
 	showServiceStatus(serviceName)
 
@@ -82,19 +80,11 @@ func Setup() error {
 	return nil
 }
 
-// checkServiceExists checks if a systemd service exists and is enabled
-func checkServiceExists(serviceName string) (bool, error) {
-	// Check if service unit file exists
-	cmd := exec.Command("systemctl", "list-unit-files", serviceName)
-	output, _ := cmd.Output() // Don't fail if not found
-
-	if !strings.Contains(string(output), serviceName) {
-		return false, nil
-	}
-
+// checkServiceEnabled checks if a systemd service is enabled
+func checkServiceEnabled(serviceName string) (bool, error) {
 	// Check if service is enabled
-	cmd = exec.Command("systemctl", "is-enabled", serviceName)
-	output, _ = cmd.Output()
+	cmd := exec.Command("systemctl", "is-enabled", serviceName)
+	output, _ := cmd.Output()
 
 	enabled := strings.TrimSpace(string(output)) == "enabled"
 	return enabled, nil
