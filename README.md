@@ -2,13 +2,38 @@
 
 Suno AI workflow automation server with Telegram integration and LLM-powered music generation.
 
-## Prerequisites
+## Local Machine Prerequisites
 
 - Go 1.21+
 - OpenAI API key
 - Suno API key (optional)
 - Telegram bot token (optional, for notifications)
 - Cloudflare tunnel (optional, for local webhook testing)
+
+## VPS prerequisites
+
+- Ubuntu 24.04+ server
+- SSH access
+- systemd
+- Nginx
+- Certbot
+
+#### tune sudoers
+
+Change
+
+```bash
+    sudo visudo -f /etc/sudoers.d/your_user
+```
+
+add the following line:
+
+```bash
+rio ALL=(ALL) NOPASSWD: /bin/systemctl ^(start|restart|enable|status) aiwf_.*\.service$
+rio ALL=(ALL) NOPASSWD: /bin/systemctl daemon-reload         
+rio ALL=(ALL) NOPASSWD: /bin/mv /tmp/aiwf_*.service /etc/systemd/system/aiwf_*.service
+```
+
 
 ## Configuration
 
