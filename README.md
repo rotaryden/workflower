@@ -7,7 +7,7 @@ All-in-one bin file, no docker, no complex setups, potentially intended for smal
 
 As a workflow example, Suno automation server with Telegram integration and LLM-powered music generation added.
 
-Note: Suno API is currently bogus :) it has no official API. WIP for workaround
+Note: Original Suno API implementation was hallucinated and bogus :) Suno has no official API. WIP for workaround.
 
 Intended to be rolled out with special NGINX setup on a Linux instance.
 
