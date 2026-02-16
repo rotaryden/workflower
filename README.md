@@ -1,6 +1,15 @@
-# Workflower
+# Workflower (WIP)
 
-Suno AI workflow automation server with Telegram integration and LLM-powered music generation.
+Programmatic AI workflow boilerplate for boostraping and streamlining vibe-coded AI workflows.
+
+As example, Suno automation server with Telegram integration and LLM-powered music generation added.
+
+Note: Suno API is currently bogus :) it has no official API. WIP for workaround
+
+Intended to be rolled out with special NGINX setup on a Linux instance.
+
+Known Problems as of now:
+- need to fix paths redirects cause Nginx etup assumes /tX prefix fro tool number X (port mapped 4000+X)
 
 ## Local Machine Prerequisites
 
@@ -188,6 +197,8 @@ This will:
 - Get public HTTPS URL (e.g., `https://xyz.trycloudflare.com`)
 - Override `BASE_URL` and `TELEGRAM_WEBHOOK_URL` automatically
 - Register webhook with Telegram bot
+
+**Note:** `BASE_URL` can include a path prefix (e.g., `https://example.com/api/workflower`). The application will automatically extract the path component and configure all routes, redirects, and URLs accordingly.
 
 
 Look for output:
