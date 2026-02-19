@@ -19,8 +19,8 @@ Plans:
 
 ## Local Machine Prerequisites
 
-- Go 1.21+
-- Node.js 18+ (for running the suno-api server)
+- Go 1.25+
+- Node.js 24.x LTS+ (for running the suno-api server)
 - OpenAI API key
 - Suno account with cookie + 2Captcha API key (for music generation)
 - Telegram bot token (optional, for notifications)
@@ -45,6 +45,19 @@ brew install cloudflared
 - systemd
 - Nginx
 - Certbot
+
+#### Copy scripts to VPS
+
+```bash
+scp -r scripts/ user@vps:/opt/aiworkflow/workflower/
+```
+Then run the setup script:
+
+```bash
+./scripts/wf_vps_setup.sh
+```
+
+TODO: scripts are needed to be retested, extracted from another project
 
 #### tune sudoers
 

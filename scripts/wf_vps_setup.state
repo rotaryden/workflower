@@ -1,0 +1,11 @@
+# VPS Setup Script State
+# Copy to VPS
+
+preflight_checks=false
+install_base_dependencies=false
+install_postgresql_server=false
+setup_tools_database=false
+request_ssl_certificate=false
+configure_nginx_tools=false
+create_certbot_renewal=false
+start_base_services=false
