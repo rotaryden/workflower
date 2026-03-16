@@ -22,7 +22,7 @@ func Deploy() error {
 	if err != nil {
 		return fmt.Errorf("SSH connection failed: %w", err)
 	}
-	defer client.Close()
+	defer client.Close() //nolint:errcheck
 
 	remotePath := cfg.RemotePath()
 

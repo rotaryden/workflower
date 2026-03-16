@@ -9,22 +9,24 @@ import (
 	"strings"
 
 	"workflower/config"
-	"workflower/lib/deploy"
 	"workflower/handlers"
-	"workflower/lib/logger"
+	"workflower/lib/deploy"
+	applogger "workflower/lib/logger"
 	"workflower/lib/telegram"
 	"workflower/storage"
 	"workflower/templates/prompts"
 	"workflower/templates/ui_templates"
 	"workflower/workflow"
 
-	"github.com/gin-gonic/gin"
+	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/logger"
+	"github.com/gofiber/fiber/v2/middleware/recover"
 	"github.com/joho/godotenv"
 )
 
 func main() {
 	// Initialize logger
-	logger.Init()
+	applogger.Init()
 
 	deployFlag := flag.Bool("D", false, "Deploy to remote server")
 	setupFlag := flag.Bool("setup", false, "Run remote setup (used during deployment)")
@@ -104,19 +106,16 @@ func main() {
 	// Initialize handlers
 	handler := handlers.NewHandler(cfg, store, engine, templates)
 
-	// Set Gin mode
-	if os.Getenv("GIN_MODE") == "" {
-		gin.SetMode(gin.ReleaseMode)
-	}
-
-	// Create Gin router
-	r := gin.New()
-	r.Use(gin.Logger())
-	r.Use(gin.Recovery())
-	r.Use(handlers.ErrorHandler())
+	// Create Fiber app
+	app := fiber.New(fiber.Config{
+		BodyLimit: int(cfg.MaxAudioSizeMB) << 20,
+	})
+	app.Use(logger.New())
+	app.Use(recover.New())
+	app.Use(handlers.ErrorHandler())
 
 	// Register routes
-	handler.RegisterRoutes(r)
+	handler.RegisterRoutes(app)
 
 	// Start server
 	addr := fmt.Sprintf(":%s", cfg.ServerPort)
@@ -138,7 +137,7 @@ func main() {
 		slog.Info("Premium features enabled by default")
 	}
 
-	if err := r.Run(addr); err != nil {
+	if err := app.Listen(addr); err != nil {
 		slog.Error("Failed to start server", "error", err)
 		os.Exit(1)
 	}

@@ -171,7 +171,7 @@ func (n *Notifier) doRequest(ctx context.Context, endpoint string, payload inter
 	if err != nil {
 		return nil, fmt.Errorf("failed to send request: %w", err)
 	}
-	defer resp.Body.Close()
+	defer resp.Body.Close() //nolint:errcheck
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {

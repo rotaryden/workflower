@@ -105,7 +105,7 @@ func (c *Client) ChatWithMessages(ctx context.Context, messages []Message) (stri
 	if err != nil {
 		return "", fmt.Errorf("failed to send request: %w", err)
 	}
-	defer resp.Body.Close()
+	defer resp.Body.Close() //nolint:errcheck
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {

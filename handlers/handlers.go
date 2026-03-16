@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"io"
@@ -18,7 +19,7 @@ import (
 	"workflower/templates/ui_templates"
 	"workflower/workflow"
 
-	"github.com/gin-gonic/gin"
+	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
 )
 
@@ -43,38 +44,40 @@ func NewHandler(cfg *config.Config, store *storage.Store, engine *workflow.Engin
 }
 
 // RegisterRoutes sets up all HTTP routes
-func (h *Handler) RegisterRoutes(r *gin.Engine) {
+func (h *Handler) RegisterRoutes(r *fiber.App) {
 	// Static pages
-	r.GET("/", h.StartPage)
-	r.GET("/workflows", h.WorkflowsList)
-	r.GET("/workflow/:id", h.WorkflowStatus)
-	r.GET("/review/:id", h.ReviewPage)
+	r.Get("/", h.StartPage)
+	r.Get("/workflows", h.WorkflowsList)
+	r.Get("/workflow/:id", h.WorkflowStatus)
+	r.Get("/review/:id", h.ReviewPage)
 
 	// API endpoints
-	r.POST("/workflow/start", h.StartWorkflow)
-	r.POST("/workflow/:id/submit", h.SubmitReview)
+	r.Post("/workflow/start", h.StartWorkflow)
+	r.Post("/workflow/:id/submit", h.SubmitReview)
 
 	// Telegram webhook
-	r.POST(normalizeWebhookPath(h.cfg.TelegramWebhookPath), h.TelegramWebhook)
+	r.Post(normalizeWebhookPath(h.cfg.TelegramWebhookPath), h.TelegramWebhook)
 
 	// Health check
-	r.GET("/health", h.HealthCheck)
+	r.Get("/health", h.HealthCheck)
 }
 
 // StartPage renders the workflow starter form
-func (h *Handler) StartPage(c *gin.Context) {
+func (h *Handler) StartPage(c *fiber.Ctx) error {
 	data := ui_templates.PageData{
 		Title: "Create Song",
 	}
 
-	c.Header("Content-Type", "text/html; charset=utf-8")
-	if err := h.templates.Start.Execute(c.Writer, data); err != nil {
-		c.String(http.StatusInternalServerError, "Template error: %v", err)
+	var buf bytes.Buffer
+	if err := h.templates.Start.Execute(&buf, data); err != nil {
+		return c.Status(http.StatusInternalServerError).SendString(fmt.Sprintf("Template error: %v", err))
 	}
+	c.Set("Content-Type", "text/html; charset=utf-8")
+	return c.Send(buf.Bytes())
 }
 
 // WorkflowsList shows all workflows
-func (h *Handler) WorkflowsList(c *gin.Context) {
+func (h *Handler) WorkflowsList(c *fiber.Ctx) error {
 	workflows := h.store.List()
 
 	data := ui_templates.PageData{
@@ -82,26 +85,26 @@ func (h *Handler) WorkflowsList(c *gin.Context) {
 		Workflows: workflows,
 	}
 
-	c.Header("Content-Type", "text/html; charset=utf-8")
-	if err := h.templates.List.Execute(c.Writer, data); err != nil {
-		c.String(http.StatusInternalServerError, "Template error: %v", err)
+	var buf bytes.Buffer
+	if err := h.templates.List.Execute(&buf, data); err != nil {
+		return c.Status(http.StatusInternalServerError).SendString(fmt.Sprintf("Template error: %v", err))
 	}
+	c.Set("Content-Type", "text/html; charset=utf-8")
+	return c.Send(buf.Bytes())
 }
 
 // WorkflowStatus shows the status of a specific workflow
-func (h *Handler) WorkflowStatus(c *gin.Context) {
-	id := c.Param("id")
+func (h *Handler) WorkflowStatus(c *fiber.Ctx) error {
+	id := c.Params("id")
 
 	wf, ok := h.store.Get(id)
 	if !ok {
-		c.String(http.StatusNotFound, "Workflow not found")
-		return
+		return c.Status(http.StatusNotFound).SendString("Workflow not found")
 	}
 
 	// If awaiting review, redirect to review page
 	if wf.Status == "awaiting_review" {
-		c.Redirect(http.StatusFound, "/review/"+id)
-		return
+		return c.Redirect("/review/"+id, http.StatusFound)
 	}
 
 	data := ui_templates.PageData{
@@ -109,25 +112,25 @@ func (h *Handler) WorkflowStatus(c *gin.Context) {
 		Workflow: wf,
 	}
 
-	c.Header("Content-Type", "text/html; charset=utf-8")
-	if err := h.templates.Status.Execute(c.Writer, data); err != nil {
-		c.String(http.StatusInternalServerError, "Template error: %v", err)
+	var buf bytes.Buffer
+	if err := h.templates.Status.Execute(&buf, data); err != nil {
+		return c.Status(http.StatusInternalServerError).SendString(fmt.Sprintf("Template error: %v", err))
 	}
+	c.Set("Content-Type", "text/html; charset=utf-8")
+	return c.Send(buf.Bytes())
 }
 
 // ReviewPage shows the human-in-the-loop review form
-func (h *Handler) ReviewPage(c *gin.Context) {
-	id := c.Param("id")
+func (h *Handler) ReviewPage(c *fiber.Ctx) error {
+	id := c.Params("id")
 
 	wf, ok := h.store.Get(id)
 	if !ok {
-		c.String(http.StatusNotFound, "Workflow not found")
-		return
+		return c.Status(http.StatusNotFound).SendString("Workflow not found")
 	}
 
 	if wf.Status != "awaiting_review" {
-		c.Redirect(http.StatusFound, "/workflow/"+id)
-		return
+		return c.Redirect("/workflow/"+id, http.StatusFound)
 	}
 
 	data := ui_templates.PageData{
@@ -135,58 +138,51 @@ func (h *Handler) ReviewPage(c *gin.Context) {
 		Workflow: wf,
 	}
 
-	c.Header("Content-Type", "text/html; charset=utf-8")
-	if err := h.templates.Review.Execute(c.Writer, data); err != nil {
-		c.String(http.StatusInternalServerError, "Template error: %v", err)
+	var buf bytes.Buffer
+	if err := h.templates.Review.Execute(&buf, data); err != nil {
+		return c.Status(http.StatusInternalServerError).SendString(fmt.Sprintf("Template error: %v", err))
 	}
+	c.Set("Content-Type", "text/html; charset=utf-8")
+	return c.Send(buf.Bytes())
 }
 
 // StartWorkflow handles the workflow creation request
-func (h *Handler) StartWorkflow(c *gin.Context) {
-	// Parse form data
-	if err := c.Request.ParseMultipartForm(int64(h.cfg.MaxAudioSizeMB) << 20); err != nil {
-		// Try regular form parsing
-		if err := c.Request.ParseForm(); err != nil {
-			c.String(http.StatusBadRequest, "Failed to parse form: %v", err)
-			return
-		}
-	}
-
-	taskDescription := c.PostForm("task_description")
+func (h *Handler) StartWorkflow(c *fiber.Ctx) error {
+	taskDescription := c.FormValue("task_description")
 	if taskDescription == "" {
-		c.String(http.StatusBadRequest, "Task description is required")
-		return
+		return c.Status(http.StatusBadRequest).SendString("Task description is required")
 	}
 
-	isPremium := c.PostForm("is_premium") == "true"
+	isPremium := c.FormValue("is_premium") == "true"
 
 	// Handle audio file upload
 	var audioFilePath, audioFileName string
-	file, header, err := c.Request.FormFile("audio_file")
-	if err == nil && file != nil {
-		defer file.Close()
+	fileHeader, err := c.FormFile("audio_file")
+	if err == nil && fileHeader != nil {
+		file, err := fileHeader.Open()
+		if err != nil {
+			return c.Status(http.StatusInternalServerError).SendString(fmt.Sprintf("Failed to open uploaded file: %v", err))
+		}
+		defer file.Close() //nolint:errcheck
 
 		// Create uploads directory
 		uploadsDir := filepath.Join("uploads", time.Now().Format("2006-01-02"))
 		if err := os.MkdirAll(uploadsDir, 0755); err != nil {
-			c.String(http.StatusInternalServerError, "Failed to create uploads directory: %v", err)
-			return
+			return c.Status(http.StatusInternalServerError).SendString(fmt.Sprintf("Failed to create uploads directory: %v", err))
 		}
 
 		// Save file
-		audioFileName = header.Filename
-		audioFilePath = filepath.Join(uploadsDir, uuid.New().String()+"_"+header.Filename)
+		audioFileName = fileHeader.Filename
+		audioFilePath = filepath.Join(uploadsDir, uuid.New().String()+"_"+fileHeader.Filename)
 
 		dst, err := os.Create(audioFilePath)
 		if err != nil {
-			c.String(http.StatusInternalServerError, "Failed to save file: %v", err)
-			return
+			return c.Status(http.StatusInternalServerError).SendString(fmt.Sprintf("Failed to save file: %v", err))
 		}
-		defer dst.Close()
+		defer dst.Close() //nolint:errcheck
 
 		if _, err := io.Copy(dst, file); err != nil {
-			c.String(http.StatusInternalServerError, "Failed to save file: %v", err)
-			return
+			return c.Status(http.StatusInternalServerError).SendString(fmt.Sprintf("Failed to save file: %v", err))
 		}
 	}
 
@@ -194,53 +190,49 @@ func (h *Handler) StartWorkflow(c *gin.Context) {
 	ctx := context.Background()
 	state, err := h.engine.StartWorkflow(ctx, taskDescription, isPremium, audioFilePath, audioFileName)
 	if err != nil {
-		c.String(http.StatusInternalServerError, "Failed to start workflow: %v", err)
-		return
+		return c.Status(http.StatusInternalServerError).SendString(fmt.Sprintf("Failed to start workflow: %v", err))
 	}
 
 	// Redirect to workflow status page
-	c.Redirect(http.StatusFound, "/workflow/"+state.ID)
+	return c.Redirect("/workflow/"+state.ID, http.StatusFound)
 }
 
 // SubmitReview handles the review form submission
-func (h *Handler) SubmitReview(c *gin.Context) {
-	id := c.Param("id")
+func (h *Handler) SubmitReview(c *fiber.Ctx) error {
+	id := c.Params("id")
 
 	wf, ok := h.store.Get(id)
 	if !ok {
-		c.String(http.StatusNotFound, "Workflow not found")
-		return
+		return c.Status(http.StatusNotFound).SendString("Workflow not found")
 	}
 
 	if wf.Status != "awaiting_review" {
-		c.String(http.StatusBadRequest, "Workflow is not awaiting review")
-		return
+		return c.Status(http.StatusBadRequest).SendString("Workflow is not awaiting review")
 	}
 
-	action := c.PostForm("action")
+	action := c.FormValue("action")
 
 	if action == "reject" {
 		h.engine.RejectWorkflow(wf)
-		c.Redirect(http.StatusFound, "/workflow/"+id)
-		return
+		return c.Redirect("/workflow/"+id, http.StatusFound)
 	}
 
 	// Update with edited values
-	wf.EditedLyrics = c.PostForm("edited_lyrics")
+	wf.EditedLyrics = c.FormValue("edited_lyrics")
 
 	// Parse properties
-	weirdness, _ := strconv.ParseFloat(c.PostForm("weirdness"), 64)
+	weirdness, _ := strconv.ParseFloat(c.FormValue("weirdness"), 64)
 	wf.EditedProperties = &storage.SunoProperties{
-		Style:          c.PostForm("style"),
-		VocalType:      c.PostForm("vocal_type"),
+		Style:          c.FormValue("style"),
+		VocalType:      c.FormValue("vocal_type"),
 		Weirdness:      weirdness,
-		StyleInfluence: c.PostForm("style_influence"),
+		StyleInfluence: c.FormValue("style_influence"),
 	}
 
 	// Update premium features if present
 	if wf.IsPremium {
-		persona := c.PostForm("persona")
-		inspo := c.PostForm("inspo")
+		persona := c.FormValue("persona")
+		inspo := c.FormValue("inspo")
 		if persona != "" || inspo != "" {
 			wf.PersonaInspo = &storage.PersonaInspo{
 				Persona: persona,
@@ -254,33 +246,29 @@ func (h *Handler) SubmitReview(c *gin.Context) {
 	// Approve and submit to Suno
 	ctx := context.Background()
 	if err := h.engine.ApproveWorkflow(ctx, wf); err != nil {
-		c.String(http.StatusInternalServerError, "Failed to approve workflow: %v", err)
-		return
+		return c.Status(http.StatusInternalServerError).SendString(fmt.Sprintf("Failed to approve workflow: %v", err))
 	}
 
-	c.Redirect(http.StatusFound, "/workflow/"+id)
+	return c.Redirect("/workflow/"+id, http.StatusFound)
 }
 
 // TelegramWebhook handles incoming Telegram webhook updates.
-func (h *Handler) TelegramWebhook(c *gin.Context) {
+func (h *Handler) TelegramWebhook(c *fiber.Ctx) error {
 	if h.cfg.TelegramBotToken == "" {
-		c.JSON(http.StatusServiceUnavailable, gin.H{"status": "telegram_disabled"})
-		return
+		return c.Status(http.StatusServiceUnavailable).JSON(fiber.Map{"status": "telegram_disabled"})
 	}
 
-	if !telegram.VerifyWebhookSecret(c.Request, h.cfg.TelegramWebhookSecret) {
-		c.JSON(http.StatusUnauthorized, gin.H{"status": "unauthorized"})
-		return
+	if !telegram.VerifyWebhookSecret(c.Get(telegram.WebhookSecretHeader), h.cfg.TelegramWebhookSecret) {
+		return c.Status(http.StatusUnauthorized).JSON(fiber.Map{"status": "unauthorized"})
 	}
 
 	var update telegram.Update
-	if err := c.ShouldBindJSON(&update); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"status": "invalid_payload"})
-		return
+	if err := c.BodyParser(&update); err != nil {
+		return c.Status(http.StatusBadRequest).JSON(fiber.Map{"status": "invalid_payload"})
 	}
 
-	c.Status(http.StatusOK)
 	go h.handleTelegramUpdate(update)
+	return c.SendStatus(http.StatusOK)
 }
 
 func (h *Handler) handleTelegramUpdate(update telegram.Update) {
@@ -404,8 +392,8 @@ func (h *Handler) replyTelegramText(chatID, message string) {
 }
 
 // HealthCheck returns server health status
-func (h *Handler) HealthCheck(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{
+func (h *Handler) HealthCheck(c *fiber.Ctx) error {
+	return c.Status(http.StatusOK).JSON(fiber.Map{
 		"status":    "ok",
 		"timestamp": time.Now().Format(time.RFC3339),
 		"version":   "1.0.0",
@@ -413,15 +401,14 @@ func (h *Handler) HealthCheck(c *gin.Context) {
 }
 
 // ErrorHandler is a middleware for handling panics
-func ErrorHandler() gin.HandlerFunc {
-	return func(c *gin.Context) {
+func ErrorHandler() fiber.Handler {
+	return func(c *fiber.Ctx) error {
 		defer func() {
-			if err := recover(); err != nil {
-				c.String(http.StatusInternalServerError, fmt.Sprintf("Internal server error: %v", err))
-				c.Abort()
+			if r := recover(); r != nil {
+				_ = c.Status(http.StatusInternalServerError).SendString(fmt.Sprintf("Internal server error: %v", r))
 			}
 		}()
-		c.Next()
+		return c.Next()
 	}
 }
 

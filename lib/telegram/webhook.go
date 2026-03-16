@@ -2,7 +2,6 @@ package telegram
 
 import (
 	"crypto/subtle"
-	"net/http"
 	"strings"
 )
 
@@ -54,14 +53,14 @@ type CallbackQuery struct {
 	Data    string   `json:"data,omitempty"`
 }
 
-// VerifyWebhookSecret validates the Telegram webhook secret token.
-func VerifyWebhookSecret(r *http.Request, expectedSecret string) bool {
+// VerifyWebhookSecret validates the Telegram webhook secret token header value.
+func VerifyWebhookSecret(headerValue string, expectedSecret string) bool {
 	expected := strings.TrimSpace(expectedSecret)
 	if expected == "" {
 		return true
 	}
 
-	provided := r.Header.Get(WebhookSecretHeader)
+	provided := headerValue
 	if provided == "" || len(provided) != len(expected) {
 		return false
 	}

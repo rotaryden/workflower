@@ -56,7 +56,7 @@ func (c *SSHClient) RunCommand(cmd string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("failed to create session: %w", err)
 	}
-	defer session.Close()
+	defer session.Close() //nolint:errcheck
 
 	output, err := session.CombinedOutput(cmd)
 	if err != nil {
@@ -72,7 +72,7 @@ func (c *SSHClient) RunCommandWithOutput(cmd string) error {
 	if err != nil {
 		return fmt.Errorf("failed to create session: %w", err)
 	}
-	defer session.Close()
+	defer session.Close() //nolint:errcheck
 
 	session.Stdout = os.Stdout
 	session.Stderr = os.Stderr
@@ -101,7 +101,7 @@ func (c *SSHClient) CopyFile(localPath, remotePath string) error {
 	if err != nil {
 		return fmt.Errorf("failed to create session: %w", err)
 	}
-	defer session.Close()
+	defer session.Close() //nolint:errcheck
 
 	stdin, err := session.StdinPipe()
 	if err != nil {
@@ -117,7 +117,7 @@ func (c *SSHClient) CopyFile(localPath, remotePath string) error {
 	if _, err := stdin.Write(data); err != nil {
 		return fmt.Errorf("failed to write file data: %w", err)
 	}
-	stdin.Close()
+	_ = stdin.Close()
 
 	// Wait for cat to complete
 	if err := session.Wait(); err != nil {

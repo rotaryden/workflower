@@ -254,8 +254,8 @@ func ExampleClient_GetQuota() {
 	fmt.Printf("Period: %s\n", quota.Period)
 }
 
-// ExampleClient_CompleteWorkflow demonstrates a complete music generation workflow
-func ExampleClient_CompleteWorkflow() {
+// Example_completeWorkflow demonstrates a complete music generation workflow
+func Example_completeWorkflow() {
 	client := suno.NewClient("http://localhost:3000")
 	ctx := context.Background()
 

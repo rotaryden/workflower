@@ -75,7 +75,7 @@ func Setup() error {
 	showServiceStatus(serviceName)
 
 	// Cleanup temporary service file
-	os.Remove(tmpServicePath)
+	_ = os.Remove(tmpServicePath)
 
 	return nil
 }
@@ -157,5 +157,5 @@ func showServiceStatus(serviceName string) {
 	cmd := exec.Command("systemctl", "status", serviceName, "--no-pager", "-l")
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
-	cmd.Run() // Ignore errors, just show status
+	_ = cmd.Run() // Ignore errors, just show status
 }
